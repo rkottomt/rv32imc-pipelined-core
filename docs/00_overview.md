@@ -1,6 +1,6 @@
-# 00 — Project Overview and Study Guide
+# 00 — Project Overview
 
-Read the docs in order. Each one ends with interview Q&A.
+The docs are meant to be read in order. Each one ends with a short design Q&A covering the trade-offs behind its decisions.
 
 | Doc | Topic |
 |---|---|
@@ -12,15 +12,12 @@ Read the docs in order. Each one ends with interview Q&A.
 | 05_formal.md | riscv-formal setup, checks, solver engineering, formal-found bug |
 | 06_fpga_timing.md | ECP5 flow, utilization, timing-closure log |
 | 07_performance.md | CoreMark/Dhrystone, design-space study, predictor bug found by profiling |
-| 08_interview_prep.md | Pitch, stories, likely questions |
-| RESUME.md | Resume bullets |
 
-**Suggested study plan:**
+**Suggested reading path:**
 1. Read 01 and 02 with `rtl/core/rv_core.v` and `rtl/core/rv_frontend.v` open.
 2. Run one riscv-test with a waveform: `make sim TRACE=1`, then `build/sim_core/Vrv_core +elf=build/riscv-tests/rv32ui-p-add +fst=add.fst`, then open it in GTKWave.
 3. Read 03, then run `verif/rig/run_random.sh 1 5` and look at a generated `.S` file.
 4. Read 04–07.
-5. Rehearse 08 out loud.
 
 ## Toolchain (all open source, no hardware needed)
 

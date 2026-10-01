@@ -22,7 +22,7 @@ module rv_ram #(
     reg [31:0] mem [0:(1<<AW)-1];
 
 `ifndef SYNTHESIS
-    reg [1023:0] hexfile;
+    reg [8*1024-1:0] hexfile;   // path of up to 1024 characters (longer ones get truncated)
     initial begin
         if ($value$plusargs("ram_hex=%s", hexfile)) $readmemh(hexfile, mem);
         else if (INIT_FILE != "") $readmemh(INIT_FILE, mem);

@@ -60,7 +60,7 @@
 - `stall_ex`: `stall_mem`, or the divider is busy (about 33 cycles).
 - `stall_id`: `stall_ex`, or a load-use hazard.
 
-**The operand-capture subtlety** (a good interview story):
+**The operand-capture subtlety:**
 - If EX is stalled while MEM is stalled and WB keeps draining, the producer EX was forwarding from can *leave* the pipeline.
 - Fix: while EX is stalled, it re-latches its forwarded operands every cycle (`ex_rs1_val <= ex_a_reg`), so the correct value is never lost.
 
@@ -71,7 +71,7 @@
   - the instruction itself does not write anything; `mepc`, `mcause`, `mtval` and `mstatus` are updated and fetch is redirected to `mtvec`.
 - CSR reads and writes and MRET also happen in MEM, so they are naturally ordered with traps.
 - `minstret` increments at MEM too. An instruction that leaves MEM without trapping is guaranteed to retire.
-  - *Bug story:* this originally counted in WB, so a `csrr minstret` saw a count that was one instruction behind. The official `instret_overflow` test caught it.
+  - *Bug found:* this originally counted in WB, so a `csrr minstret` saw a count that was one instruction behind. The official `instret_overflow` test caught it.
 
 ## M extension
 - **MUL\***: 33×33 signed multiply on DSP blocks. The extra bit handles signed/unsigned variants uniformly. It takes 2 cycles: operands are registered before the multiplier, for timing.
@@ -84,7 +84,7 @@
 - The fetch unit runs ahead of decode, buffering up to 4 words. Bus latency or a decode stall is absorbed by the queue rather than stalling the whole machine.
 - It also makes RVC (compressed) support clean: the aligner simply consumes 16-bit "parcels" from the word stream. See `02_frontend.md`.
 
-## Interview Q&A
+## Design Q&A
 - **Why trap in MEM and not EX?** EX hasn't yet seen the result of older instructions' memory access or CSR side effects. MEM is the last point before state is updated, so committing there keeps exceptions precise with a single flush point.
 - **Why can't the load result be forwarded to EX one cycle later without a stall?** The data bus responds at the end of MEM at the earliest (synchronous RAM / cache), so the value exists in WB.
 - **What is the CPI cost of each hazard?** Load-use: 1 cycle. MUL: 1 extra cycle. Mispredict: 4 cycles. DIV: about 33 cycles. Taken branch correctly predicted by the BTB: 0 cycles.

@@ -53,7 +53,7 @@
   - 0–49% random back-pressure;
   - random external interrupts (every other seed).
 
-## Coverage closure (a good interview story)
+## Coverage closure
 The first coverage run hit **75.8%**. The report showed *real blind spots in the generator*:
 1. **Load/store addresses always came from the never-written base register.** Address-generation hazards (`addi`→`lw` base, pointer-chasing `lw`→`lw`) were never tested. *Fix*: computed and loaded base pointers.
 2. **The assembler silently compressed `jalr`/`ebreak`**, so the 32-bit forms never ran. *Fix*: `.option norvc` regions.
@@ -91,14 +91,13 @@ Result: **234/234 bins = 100%**.
 - **Round 2: 16/16.**
 - *Lesson*: a passing regression proves nothing about bugs it cannot observe. Mutation testing measures the regression's ability to *detect*, not just to *pass*.
 
-## Bugs found by verification (keep this list. Interviewers love it)
+## Bugs found by verification
 
 | # | Found by | Bug | Fix |
 |---|---|---|---|
 | 1 | riscv-tests `instret_overflow` | `minstret` counted at WB, so a CSR read in MEM missed the instruction just ahead of it | Count retirement at the MEM commit point; CSR writes to the counter suppress that cycle's increment |
 | 2 | Random co-sim (12/20 seeds failed) | **Divider latched a stale operand.** DIV directly after a load, with memory latency > 1: the divider captured operands on its first EX cycle while the load was still waiting in WB, so the bypass returned the old register value. | The divider only starts when there is no MEM/WB stall (`hold` input), i.e. when the bypass network is valid |
 | 3 | Random (timeouts) | *Testbench bug, not RTL*: generator emitted `auipc+jalr +12`, which lands mid-instruction when the next `nop` gets compressed | Use `%pcrel_hi/%pcrel_lo` relocations. Co-sim showed RTL == ISS, which pointed straight at the program |
-
 | 4 | riscv-formal `pc_fwd` | `rvfi_intr` not set when the first instruction of a trap handler itself traps (interrupt → handler → illegal instruction) | Flag the first record after *any* trap event. This also fixed the co-sim IRQ flag for that case |
 | 5 | Yosys (synthesis lint) | Latch inferred for a `for`-loop variable in the CSR read mux (only assigned on some paths) | Direct indexing instead of a loop |
 | 6 | Performance profiling | Branch predictor never predicted 32-bit branches straddling two fetch words, so ~half the branches in compressed code were unpredictable (28% mispredict) | Key them by their *end* word (`xe` flag): 10% mispredict, +11% IPC |
@@ -122,7 +121,7 @@ python3 verif/mutation/mutate.py                      # mutation testing
 make regress                                          # everything except formal
 ```
 
-## Interview Q&A
+## Design Q&A
 - **Why is a golden-model comparison better than self-checking tests?** A self-checking test only checks what its author thought to check. Co-sim checks *every* architectural effect of *every* instruction, so random programs need no expected values.
 - **How do you handle interrupts in co-sim, since they're timing-dependent?** The DUT decides when and the model follows: the RTL trace marks where an interrupt was taken, and the ISS takes it at the same instruction boundary. What we verify is that the RTL takes it *precisely* (correct `mepc`/`mcause`, nothing lost or duplicated).
 - **What does 100% functional coverage *not* tell you?** That the checker is right, or that untracked scenarios work. Hence code coverage, formal proofs and mutation testing as complements.

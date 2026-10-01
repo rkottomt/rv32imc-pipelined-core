@@ -51,7 +51,7 @@ The BTB is indexed by *fetch-word* address, but instructions can start at halfwo
 - So a bad prediction can never corrupt state. It can only cost a redirect (4 cycles: the redirect is registered for timing).
 - That's why the predictor can use a speculative RAS without repair, and a non-speculative GHR, with no correctness risk.
 
-## Interview Q&A
+## Design Q&A
 - **gshare vs bimodal?** Bimodal indexes by PC only. gshare XORs in global history, so the same branch gets different counters depending on the path taken to reach it. This captures correlated branches (e.g. `if (x) ...; if (x) ...`).
 - **Why a separate RAS?** A BTB stores only one target per return instruction, but a function returns to many call sites. A stack matches the call/return nesting.
 - **What happens on a BTB alias?** EX detects that the predicted NPC ≠ actual NPC, redirects, and retrains. Cost: 4 cycles.

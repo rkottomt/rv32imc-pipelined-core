@@ -8,3 +8,4 @@ sim_build/
 results.xml
 formal/**/work*/
 third_party/
+private/
