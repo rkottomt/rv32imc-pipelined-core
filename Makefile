@@ -1,4 +1,6 @@
 # Top-level Makefile.  `source env.sh` first (puts tools on PATH).
+# Verilator's -Mdir creates only one directory level, so every simulator
+# recipe makes its output directory first (a fresh checkout has no build/).
 ROOT      := $(abspath .)
 BUILD     := $(ROOT)/build
 RTL_CORE  := $(wildcard rtl/core/*.v)
@@ -16,6 +18,7 @@ all: sim
 SIM_CORE := $(BUILD)/sim_core/Vrv_core
 sim: $(SIM_CORE)
 $(SIM_CORE): $(RTL_CORE) sim/tb_core.cpp
+	@mkdir -p $(@D)
 	verilator --cc --exe --build -j 8 $(VFLAGS) --top-module rv_core \
 	  -Mdir $(BUILD)/sim_core $(RTL_CORE) sim/tb_core.cpp -o Vrv_core
 
@@ -28,6 +31,7 @@ SOC_DEFS ?=
 SIM_SOC  := $(BUILD)/sim_soc$(SOC_TAG)/Vrv_soc
 sim-soc: $(SIM_SOC)
 $(SIM_SOC): $(RTL_SOC) sim/tb_soc.cpp
+	@mkdir -p $(@D)
 	verilator --cc --exe --build -j 8 $(VFLAGS) $(SOC_DEFS) --top-module rv_soc \
 	  -Mdir $(dir $(SIM_SOC)) $(RTL_SOC) sim/tb_soc.cpp -o Vrv_soc
 
@@ -55,6 +59,7 @@ regress: run-tests run-tests-soc directed unit random random-soc
 # Line + toggle coverage of the core from riscv-tests + random programs.
 SIM_COV := $(BUILD)/sim_cov/Vrv_core
 $(SIM_COV): $(RTL_CORE) sim/tb_core.cpp
+	@mkdir -p $(@D)
 	verilator --cc --exe --build -j 8 $(VFLAGS) --coverage-line --coverage-toggle --top-module rv_core \
 	  -Mdir $(BUILD)/sim_cov $(RTL_CORE) sim/tb_core.cpp -o Vrv_core
 code-coverage: $(SIM_COV) tests
