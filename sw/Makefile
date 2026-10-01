@@ -1,6 +1,6 @@
 # Build C programs for the SoC.   make -C sw [coremark|dhrystone|tests]
 CC      := riscv-none-elf-gcc
-ARCH    ?= rv32imc_zicsr
+ARCH    ?= rv32imc_zicsr_zifencei
 CFLAGS  := -march=$(ARCH) -mabi=ilp32 -O2 -g -ffunction-sections -fdata-sections -Icommon
 LDFLAGS := -march=$(ARCH) -mabi=ilp32 -nostartfiles -T soc.ld -Wl,--gc-sections -Wl,--no-warn-rwx-segments --specs=nano.specs
 OUT     := ../build/sw
@@ -13,7 +13,7 @@ DHRY_RUNS ?= 2000
 # Dhrystone 2.2 as distributed with riscv-tests (copied into sw/dhrystone)
 DHRY_SRC := dhrystone/dhrystone.c dhrystone/dhrystone_main.c
 
-TESTS := $(patsubst tests/%.c,$(OUT)/%.elf,$(wildcard tests/*.c))
+TESTS := $(patsubst tests/%.c,$(OUT)/%.elf,$(wildcard tests/*.c)) $(patsubst tests/%.S,$(OUT)/%.elf,$(wildcard tests/*.S))
 
 all: $(OUT)/coremark.elf $(OUT)/dhrystone.elf $(TESTS)
 coremark: $(OUT)/coremark.elf
@@ -33,6 +33,10 @@ $(OUT)/dhrystone.elf: $(DHRY_SRC) $(COMMON) dhrystone/util.h
 $(OUT)/%.elf: tests/%.c $(COMMON)
 	@mkdir -p $(OUT)
 	$(CC) $(CFLAGS) $(COMMON) $< $(LDFLAGS) -o $@
+
+$(OUT)/%.elf: tests/%.S
+	@mkdir -p $(OUT)
+	$(CC) -march=$(ARCH) -mabi=ilp32 -nostdlib -nostartfiles -T soc.ld -Wl,--no-warn-rwx-segments $< -o $@
 
 clean:
 	rm -rf $(OUT)

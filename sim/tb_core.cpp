@@ -16,6 +16,9 @@
 //   +fst=<file>        dump waveform (FST)
 #include <verilated.h>
 #include "Vrv_core.h"
+#if VM_COVERAGE
+#include <verilated_cov.h>
+#endif
 #if VM_TRACE
 #include <verilated_fst_c.h>
 #endif
@@ -244,6 +247,12 @@ int main(int argc, char** argv) {
     if (trace) fclose(trace);
 #if VM_TRACE
     if (tfp) tfp->close();
+#endif
+#if VM_COVERAGE
+    {
+        std::string cov = plusarg_str("cov");
+        if (!cov.empty()) Verilated::threadContextp()->coveragep()->write(cov.c_str());
+    }
 #endif
     double ipc = cycle ? (double)retired / cycle : 0;
     if (exit_code < 0) {

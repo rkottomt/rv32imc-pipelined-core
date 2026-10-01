@@ -51,7 +51,7 @@
 **3. Control hazards: predict, then verify in EX.**
 - Every instruction carries the *predicted* next PC (`pred_npc`).
 - EX computes the real next PC. On a mismatch it flushes the two younger stages (ID and the fetch queue) and redirects fetch.
-- The mispredict penalty is 3 cycles.
+- The redirect itself is registered (applied the cycle after EX, which also kills the wrong-path instruction that just entered EX). That is a timing-closure choice, see `06_fpga_timing.md`. The mispredict penalty is 4 cycles.
 - Because *every* instruction is checked, a wrong prediction (even a stale or aliased BTB entry on a non-branch) can only cost time, never correctness.
 
 **4. Structural / variable latency: stalls propagate backwards.**
@@ -74,7 +74,7 @@
   - *Bug story:* this originally counted in WB, so a `csrr minstret` saw a count that was one instruction behind. The official `instret_overflow` test caught it.
 
 ## M extension
-- **MUL\***: single-cycle 33×33 signed multiply. The extra bit handles signed/unsigned variants uniformly, and it maps onto FPGA DSP blocks.
+- **MUL\***: 33×33 signed multiply on DSP blocks. The extra bit handles signed/unsigned variants uniformly. It takes 2 cycles: operands are registered before the multiplier, for timing.
 - **DIV/REM**: radix-2 *restoring* divider, one quotient bit per cycle (32 cycles plus setup).
   - Signs are stripped first and re-applied at the end.
   - Divide-by-zero follows the spec: quotient = all 1s, remainder = dividend.
@@ -87,4 +87,4 @@
 ## Interview Q&A
 - **Why trap in MEM and not EX?** EX hasn't yet seen the result of older instructions' memory access or CSR side effects. MEM is the last point before state is updated, so committing there keeps exceptions precise with a single flush point.
 - **Why can't the load result be forwarded to EX one cycle later without a stall?** The data bus responds at the end of MEM at the earliest (synchronous RAM / cache), so the value exists in WB.
-- **What is the CPI cost of each hazard?** Load-use: 1 cycle. Mispredict: 3 cycles. DIV: about 33 cycles. Taken branch correctly predicted by the BTB: 0 cycles.
+- **What is the CPI cost of each hazard?** Load-use: 1 cycle. MUL: 1 extra cycle. Mispredict: 4 cycles. DIV: about 33 cycles. Taken branch correctly predicted by the BTB: 0 cycles.

@@ -1,0 +1,54 @@
+name: CI
+on: [push, pull_request]
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install OSS CAD Suite (Verilator, Icarus, Yosys, nextpnr, SymbiYosys)
+        uses: YosysHQ/setup-oss-cad-suite@v3
+      - name: Install RISC-V GCC
+        run: |
+          curl -sL https://github.com/xpack-dev-tools/riscv-none-elf-gcc-xpack/releases/download/v15.2.0-1/xpack-riscv-none-elf-gcc-15.2.0-1-linux-x64.tar.gz | tar -xz -C $HOME
+          echo "$HOME/xpack-riscv-none-elf-gcc-15.2.0-1/bin" >> $GITHUB_PATH
+      - name: Python deps
+        run: pip install cocotb pytest
+      - name: Fetch third-party sources (riscv-tests, riscv-formal, coremark)
+        run: scripts/fetch_third_party.sh
+      - name: Build simulators
+        run: make -j4 sim sim-soc
+      - name: riscv-tests (core + SoC)
+        run: make run-tests run-tests-soc
+      - name: Directed tests (ISS co-sim)
+        run: make directed
+      - name: Unit tests (cocotb)
+        run: make unit
+      - name: Constrained-random co-simulation (core + stressed SoC)
+        run: make random N=40 && make random-soc N=20
+      - name: Benchmarks
+        run: |
+          make -C sw coremark dhrystone
+          build/sim_soc/Vrv_soc +elf=build/sw/coremark.elf | tail -20
+          build/sim_soc/Vrv_soc +elf=build/sw/dhrystone.elf | grep -E "STATS|PASS"
+
+  formal-smoke:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: YosysHQ/setup-oss-cad-suite@v3
+      - run: scripts/fetch_third_party.sh
+      - name: riscv-formal (subset)
+        run: JOBS=4 formal/run.sh 'insn_(add|lw|sw|beq|jalr|c_lw|c_j)_ch0|pc_fwd|unique|causal'
+
+  synth:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: YosysHQ/setup-oss-cad-suite@v3
+      - name: Install RISC-V GCC
+        run: |
+          curl -sL https://github.com/xpack-dev-tools/riscv-none-elf-gcc-xpack/releases/download/v15.2.0-1/xpack-riscv-none-elf-gcc-15.2.0-1-linux-x64.tar.gz | tar -xz -C $HOME
+          echo "$HOME/xpack-riscv-none-elf-gcc-15.2.0-1/bin" >> $GITHUB_PATH
+      - name: ECP5 synthesis + place & route
+        run: make -C sw tests && make -C synth FREQ=40

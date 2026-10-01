@@ -33,22 +33,25 @@ File: `rtl/core/rv_frontend.v`
 - Training happens in EX and is non-speculative.
 - **Conditional branches**: update the counter at the index computed at fetch time. The index travels with the instruction, so training hits the same counter that made the prediction.
 - **Taken control flow**: written into the BTB. The type is classified using the RISC-V calling-convention hint: `rd` is `x1`/`x5` means call; `jalr x0, 0(x1/x5)` means return.
+- Training is registered, one cycle after EX, to keep the predictor write ports off the critical timing path.
 
 ### The tricky part: predictions + compressed code
-- The BTB is indexed by *word* address, but instructions can start mid-word. Several things can make a prediction point at a halfword that is not actually an instruction boundary:
-  - jumping into the middle of a word;
-  - a straddling instruction covering the predicted slot;
-  - aliasing.
-- The aligner detects this (`pmismatch`) and performs a **fixup**: it keeps the current word, drops the bogus prediction and everything fetched after it, and refetches sequentially.
-- 32-bit branches that straddle words are never installed in the BTB.
-- The cost of a fixup is a few cycles, and it is rare.
+The BTB is indexed by *fetch-word* address, but instructions can start at halfword 2 and 32-bit ones can **straddle two words**.
+- **Normal entries** record the halfword (`off`) where the branch starts.
+- **Straddling branches** are stored under the word where they *end*, with an `xe` flag. When the aligner builds a straddling instruction from words *h* and *h+1*, it takes the prediction from *h+1* and then drops both words.
+  - *History*: the first version simply never installed straddling branches. Profiling CoreMark later showed this left ~half of all branches unpredictable (28% mispredict rate). The `xe` scheme cut it to 10% and raised IPC 11%. See `07_performance.md`.
+- **Stale or aliased entries** can point at a halfword that is not an instruction boundary:
+  - code was rewritten (self-modifying code + FENCE.I does not flush the BTB);
+  - an `xe` entry reaches the head without its straddling owner.
+  - The aligner detects this (`pmismatch`) and performs a **fixup**: it keeps the current word, clears the bogus prediction, drops everything fetched after it, and refetches sequentially.
+  - This path is exercised by `sw/tests/bp_fixup.S`. Code coverage showed random tests never reached it.
 
 ### Why correctness never depends on the predictor
 - Each instruction carries `pred_npc`, and EX compares it against the real next PC.
-- So a bad prediction can never corrupt state. It can only cost a 3-cycle redirect.
+- So a bad prediction can never corrupt state. It can only cost a redirect (4 cycles: the redirect is registered for timing).
 - That's why the predictor can use a speculative RAS without repair, and a non-speculative GHR, with no correctness risk.
 
 ## Interview Q&A
 - **gshare vs bimodal?** Bimodal indexes by PC only. gshare XORs in global history, so the same branch gets different counters depending on the path taken to reach it. This captures correlated branches (e.g. `if (x) ...; if (x) ...`).
 - **Why a separate RAS?** A BTB stores only one target per return instruction, but a function returns to many call sites. A stack matches the call/return nesting.
-- **What happens on a BTB alias?** EX detects that the predicted NPC ≠ actual NPC, redirects, and retrains. Cost: 3 cycles.
+- **What happens on a BTB alias?** EX detects that the predicted NPC ≠ actual NPC, redirects, and retrains. Cost: 4 cycles.
