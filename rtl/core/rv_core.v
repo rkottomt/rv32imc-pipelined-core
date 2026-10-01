@@ -15,7 +15,9 @@
 
 module rv_core #(
     parameter [31:0] HART_ID   = 32'd0,
-    parameter        ENABLE_BP = 1
+    parameter        ENABLE_BP = 1,
+    parameter        BTB_BITS  = 6,     // 64-entry BTB
+    parameter        BHT_BITS  = 8      // 256-entry gshare table
 ) (
     input  wire        clk,
     input  wire        rst,
@@ -72,7 +74,6 @@ module rv_core #(
     output reg         dbg_irq,
     output reg  [4:0]  dbg_irq_cause
 );
-    localparam BHT_BITS = 8;
 
     // ==================================================================
     // Pipeline control signals (defined further below)
@@ -111,7 +112,7 @@ module rv_core #(
     reg  [1:0]  ex_csr_op;
     reg         ex_ecall, ex_ebreak, ex_mret, ex_fencei, ex_illegal;
 
-    rv_frontend #(.ENABLE_BP(ENABLE_BP), .BHT_BITS(BHT_BITS)) u_fe (
+    rv_frontend #(.ENABLE_BP(ENABLE_BP), .BTB_BITS(BTB_BITS), .BHT_BITS(BHT_BITS)) u_fe (
         .clk(clk), .rst(rst), .boot_addr(boot_addr),
         .ibus_req_valid(ibus_req_valid), .ibus_req_addr(ibus_req_addr), .ibus_req_ready(ibus_req_ready),
         .ibus_resp_valid(ibus_resp_valid), .ibus_resp_data(ibus_resp_data),
@@ -546,12 +547,19 @@ module rv_core #(
             intr_irq   <= 1'b0;
             intr_cause <= 5'd0;
         end else begin
-            if (mem_fire && mem_trap) begin
+            // rvfi_intr marks the first instruction of a trap handler: the
+            // first record retired after an exception's (trapping) record, or
+            // after an interrupt was taken. That first handler instruction may
+            // itself trap, so trap records can carry rvfi_intr as well.
+            if (mem_fire && take_irq) begin
                 intr_flag  <= 1'b1;
-                intr_irq   <= take_irq;
+                intr_irq   <= 1'b1;
                 intr_cause <= irq_cause;
-            end else if (wb_fire && !wb_trap) begin
-                intr_flag <= 1'b0;
+            end else if (wb_fire && wb_trap) begin
+                intr_flag  <= 1'b1;
+                intr_irq   <= 1'b0;
+            end else if (wb_fire) begin
+                intr_flag  <= 1'b0;
             end
 
             rvfi_valid <= wb_fire;
@@ -560,8 +568,8 @@ module rv_core #(
                 rvfi_insn      <= wb_insn;
                 rvfi_trap      <= wb_trap;
                 rvfi_halt      <= 1'b0;
-                rvfi_intr      <= intr_flag && !wb_trap;
-                dbg_irq        <= intr_flag && intr_irq && !wb_trap;
+                rvfi_intr      <= intr_flag;
+                dbg_irq        <= intr_flag && intr_irq;
                 dbg_irq_cause  <= intr_cause;
                 rvfi_mode      <= 2'd3;
                 rvfi_ixl       <= 2'd1;

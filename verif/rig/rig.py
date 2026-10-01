@@ -270,9 +270,11 @@ _start:
             self.one()
         out += self.lines
         out.append("""    # ---- end of test: write 1 ("pass") to the simulation controller
-    li x29, 0x10002000
-    li x28, 1
-    sw x28, 0(x29)
+    # (x30/x31 are not used by the trap handler, so an interrupt arriving
+    # between these instructions cannot corrupt the exit value)
+    li x31, 0x10002000
+    li x30, 1
+    sw x30, 0(x31)
 1:  j 1b
 """)
         # leaf functions (exercise call/return prediction)
