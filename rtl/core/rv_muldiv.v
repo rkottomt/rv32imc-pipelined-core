@@ -16,6 +16,7 @@ module rv_muldiv (
     input  wire [31:0] a,
     input  wire [31:0] b,
     input  wire        kill,
+    input  wire        hold,      // operands not yet valid (downstream stall)
     input  wire        consume,
     output reg  [31:0] result,
     output wire        busy
@@ -59,7 +60,9 @@ module rv_muldiv (
     wire [32:0] rem_sh = {rem[31:0], quo[31]};
     wire [32:0] diff   = rem_sh - {1'b0, dvs};
 
-    wire start = valid && is_div && !running && !done && !kill;
+    // Operands are latched at start, so never start while the bypass network
+    // may still be waiting on a producer (e.g. a load stalled in WB).
+    wire start = valid && is_div && !running && !done && !kill && !hold;
 
     always @(posedge clk) begin
         if (rst || kill) begin

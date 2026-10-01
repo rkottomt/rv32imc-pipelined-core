@@ -203,7 +203,7 @@ module rv_core #(
     wire        ex_fire;
     rv_muldiv u_md (
         .clk(clk), .rst(rst), .valid(ex_valid && (ex_mul || ex_div)), .op(ex_funct3),
-        .a(ex_a_reg), .b(ex_b_reg), .kill(mem_redirect), .consume(ex_fire),
+        .a(ex_a_reg), .b(ex_b_reg), .kill(mem_redirect), .hold(stall_mem), .consume(ex_fire),
         .result(md_y), .busy(md_busy)
     );
 
