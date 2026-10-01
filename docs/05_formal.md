@@ -30,6 +30,18 @@
 | `ill` | Illegal encodings trap |
 | `cover` | Sanity: the environment can actually retire instructions (proofs are not vacuous) |
 
+## Results (final RTL)
+
+| Group | Result |
+|---|---|
+| 70 instruction checks (`insn_*`, all of RV32IMC) | **70/70 PASS** |
+| `pc_bwd`, `unique`, `causal`, `ill`, `cover` | **PASS** |
+| `reg`, `pc_fwd` | **PASS** at depth 12. At depth 16 they did not finish within a 2-hour budget, with no failure found |
+
+Total: **77/77 checks pass, zero failures.**
+- Depth 12 is enough to cover a full trip through the pipeline: instructions retire about 7 cycles after reset.
+- `pc_fwd` is the check that caught the `rvfi_intr` bug on the earlier RTL.
+
 ## Solver engineering (interview story)
 - **Bitwuzla**, the default here, did not finish `insn_add` in more than 10 minutes at depth 24. Depth 12 is enough for this pipeline, since an instruction retires about 7 cycles after reset.
 - Benchmarked three engines on the same check:

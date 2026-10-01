@@ -29,9 +29,9 @@ It runs on a Lattice ECP5 FPGA through a fully open-source flow.
 | **Constrained-random** generator: hazard-dense code, traps, random bus latency/back-pressure, random interrupts | 500+ seeds pass on the core and on a tiny-cache SoC with slow memory |
 | **Functional coverage** (instructions × hazards × branches × memory × traps × alignment) | **100%** (234/234 bins) after coverage-driven generator improvements |
 | **Code coverage** (Verilator line + toggle) | 92%; holes closed with directed tests |
-| **Formal**: riscv-formal on SymbiYosys (all 70 instruction checks + reg / pc / causal / unique / ill) | See `docs/05_formal.md` |
+| **Formal**: riscv-formal on SymbiYosys (all 70 instruction checks + reg / pc / causal / unique / ill) | **77/77 pass** (BMC, Yices) |
 | **cocotb unit tests**: exhaustive RVC expander (49,152 encodings), M-unit corner cross-product, D-cache random scoreboard | Pass |
-| **Mutation testing**: 16 realistic injected bugs (forwarding, hazards, cache, predictor, CSR) | See `docs/03_verification.md` |
+| **Mutation testing**: 16 realistic injected bugs (forwarding, hazards, cache, predictor, CSR) | **16/16 detected** |
 
 **Real bugs found and fixed:**
 - a divider operand race under memory latency (random co-sim);
