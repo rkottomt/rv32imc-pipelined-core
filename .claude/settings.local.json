@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh repo:*)",
+      "Bash(python3 -c \"import json,sys; [print\\(f''''{r[\"\"name\"\"]}: {r[\"\"description\"\"]}''''\\) for r in json.loads\\(sys.stdin.read\\(\\)\\)]\")"
+    ]
+  }
+}

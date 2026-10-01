@@ -1,0 +1,10 @@
+tools/
+.venv/
+build/
+*.vcd
+*.fst
+__pycache__/
+sim_build/
+results.xml
+formal/**/work*/
+third_party/
