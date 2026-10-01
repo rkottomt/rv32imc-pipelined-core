@@ -71,8 +71,13 @@ module rv_dcache #(
     wire [TAG_W-1:0]    s1_tag = s1_addr[31 -: TAG_W];
     wire s1_cacheable = (s1_addr & CACHEABLE_MASK) == CACHEABLE_BASE;
 
-    wire hit0 = v0[s1_idx] && tag0[s1_idx] == s1_tag;
-    wire hit1 = v1[s1_idx] && tag1[s1_idx] == s1_tag;
+    // Tag match is computed when the data RAM read is issued (request accept
+    // or replay) and registered, so the lookup cycle only has to select a
+    // way. Tags/valid bits cannot change in between: they are only written
+    // during refills, and a request is never accepted while one is pending.
+    reg  hit0_q, hit1_q;
+    wire hit0 = hit0_q;
+    wire hit1 = hit1_q;
     wire hit  = hit0 || hit1;
     wire in_lookup   = state == S_IDLE && s1_valid;
     wire lookup_hit  = in_lookup && (s1_flush || (s1_cacheable && hit));
@@ -124,6 +129,16 @@ module rv_dcache #(
     assign resp_rdata = state == S_UC_RSP ? uc_rdata : (hit0 ? d0m : d1m);
     assign stat_miss  = lookup_miss;
     assign stat_writeback = state == S_WB_WT && m_resp_valid && cnt == 2'd3;
+
+    wire [31:0] la = (state == S_REPLAY) ? s1_addr : req_addr;   // address being looked up
+    wire [SET_BITS-1:0] la_idx = la[4 +: SET_BITS];
+    wire [TAG_W-1:0]    la_tag = la[31 -: TAG_W];
+    always @(posedge clk) begin
+        if (ram_re) begin
+            hit0_q <= v0[la_idx] && tag0[la_idx] == la_tag;
+            hit1_q <= v1[la_idx] && tag1[la_idx] == la_tag;
+        end
+    end
 
     wire victim_sel = !v0[s1_idx] ? 1'b0 : !v1[s1_idx] ? 1'b1 : lru[s1_idx];
     wire victim_dirty = victim_sel ? (v1[s1_idx] && dirty1[s1_idx]) : (v0[s1_idx] && dirty0[s1_idx]);

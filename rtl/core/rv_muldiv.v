@@ -1,5 +1,7 @@
 // rv_muldiv.v - RV32M unit.
-//  * MUL/MULH/MULHSU/MULHU: single-cycle 33x33 signed multiply (maps to DSPs).
+//  * MUL/MULH/MULHSU/MULHU: 33x33 signed multiply on DSP blocks, 2 cycles:
+//    operands are registered first so the forwarding network and the DSP
+//    multiplier are not on the same timing path.
 //  * DIV/DIVU/REM/REMU:     radix-2 restoring divider, 32 iterations + 1 setup.
 // The EX stage stalls while `busy` is high. `kill` aborts an in-flight divide
 // (the instruction was flushed); `consume` acknowledges a finished result
@@ -38,13 +40,24 @@ module rv_muldiv (
     end
     assign busy = 1'b0;
 `else
-    // ---------------- multiplier ----------------
+    // ---------------- multiplier (operands registered, result next cycle)
     wire a_signed = (op[1:0] == 2'b01) || (op[1:0] == 2'b10); // MULH, MULHSU
     wire b_signed = (op[1:0] == 2'b01);                       // MULH
-    wire signed [32:0] ma = {a_signed & a[31], a};
-    wire signed [32:0] mb = {b_signed & b[31], b};
+    reg  signed [32:0] ma, mb;
+    reg         mul_done;
     wire signed [65:0] prod = ma * mb;
     wire [31:0] mul_res = (op[1:0] == 2'b00) ? prod[31:0] : prod[63:32];
+    wire mul_start = valid && !is_div && !mul_done && !kill && !hold;
+    always @(posedge clk) begin
+        if (rst || kill)
+            mul_done <= 1'b0;
+        else if (mul_start) begin
+            ma <= {a_signed & a[31], a};
+            mb <= {b_signed & b[31], b};
+            mul_done <= 1'b1;
+        end else if (mul_done && consume)
+            mul_done <= 1'b0;
+    end
 
     // ---------------- divider ----------------
     wire sgn = ~op[0];          // DIV / REM are signed
@@ -106,6 +119,6 @@ module rv_muldiv (
     end
 
     always @(*) result = is_div ? div_res : mul_res;
-    assign busy = valid && is_div && !done;
+    assign busy = valid && (is_div ? !done : !mul_done);
 `endif
 endmodule

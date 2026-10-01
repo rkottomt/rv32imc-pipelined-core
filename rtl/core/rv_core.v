@@ -72,7 +72,10 @@ module rv_core #(
     // extra trace info (not part of RVFI): cause of the interrupt that was
     // taken just before this instruction (valid when rvfi_intr && dbg_irq)
     output reg         dbg_irq,
-    output reg  [4:0]  dbg_irq_cause
+    output reg  [4:0]  dbg_irq_cause,
+    // performance events (for the testbench / performance study)
+    output wire        stat_mispredict,
+    output wire        stat_ctrl
 );
 
     // ==================================================================
@@ -80,6 +83,13 @@ module rv_core #(
     wire stall_wb, stall_mem, stall_ex, stall_id;
     wire mem_redirect, ex_redirect;
     wire [31:0] mem_redirect_pc, ex_redirect_pc;
+    // Branch mispredicts are resolved in EX but the redirect is applied one
+    // cycle later from a register (br_redir_q). This takes the
+    // operand-forward -> compare -> fetch-redirect path off the critical
+    // timing path at the cost of one extra mispredict bubble; the wrong-path
+    // instruction that entered EX meanwhile is killed.
+    reg         br_redir_q;
+    reg  [31:0] br_redir_pc_q;
 
     // ==================================================================
     // IF (front end)
@@ -90,6 +100,12 @@ module rv_core #(
     wire        fe_fixup;
 
     wire        bp_upd_valid;
+    // predictor training is registered (applied one cycle after EX) so the
+    // branch-resolution logic does not drive the BTB/BHT write ports directly
+    reg         bpq_valid, bpq_is_c, bpq_taken;
+    reg  [1:0]  bpq_type;
+    reg  [31:0] bpq_pc, bpq_target;
+    reg  [BHT_BITS-1:0] bpq_bht_idx;
     wire [1:0]  bp_upd_type;
     wire        bp_upd_taken;
     wire [31:0] bp_upd_target;
@@ -116,13 +132,13 @@ module rv_core #(
         .clk(clk), .rst(rst), .boot_addr(boot_addr),
         .ibus_req_valid(ibus_req_valid), .ibus_req_addr(ibus_req_addr), .ibus_req_ready(ibus_req_ready),
         .ibus_resp_valid(ibus_resp_valid), .ibus_resp_data(ibus_resp_data),
-        .redirect_valid(mem_redirect | ex_redirect),
-        .redirect_pc(mem_redirect ? mem_redirect_pc : ex_redirect_pc),
+        .redirect_valid(mem_redirect | br_redir_q),
+        .redirect_pc(mem_redirect ? mem_redirect_pc : br_redir_pc_q),
         .out_valid(fe_valid), .out_ready(fe_ready), .out_pc(fe_pc), .out_insn(fe_insn),
         .out_is_c(fe_is_c), .out_pred_taken(fe_pred_taken), .out_pred_npc(fe_pred_npc),
         .out_bht_idx(fe_bht_idx),
-        .upd_valid(bp_upd_valid), .upd_pc(ex_pc), .upd_is_c(ex_is_c), .upd_type(bp_upd_type),
-        .upd_taken(bp_upd_taken), .upd_target(bp_upd_target), .upd_bht_idx(ex_bht_idx),
+        .upd_valid(bpq_valid), .upd_pc(bpq_pc), .upd_is_c(bpq_is_c), .upd_type(bpq_type),
+        .upd_taken(bpq_taken), .upd_target(bpq_target), .upd_bht_idx(bpq_bht_idx),
         .stat_fixup(fe_fixup)
     );
 
@@ -205,7 +221,7 @@ module rv_core #(
     wire        ex_fire;
     rv_muldiv u_md (
         .clk(clk), .rst(rst), .valid(ex_valid && (ex_mul || ex_div)), .op(ex_funct3),
-        .a(ex_a_reg), .b(ex_b_reg), .kill(mem_redirect), .hold(stall_mem), .consume(ex_fire),
+        .a(ex_a_reg), .b(ex_b_reg), .kill(mem_redirect | br_redir_q), .hold(stall_mem), .consume(ex_fire),
         .result(md_y), .busy(md_busy)
     );
 
@@ -278,11 +294,25 @@ module rv_core #(
                             (ex_mul || ex_div)  ? md_y : alu_y;
 
     assign stall_ex = stall_mem || (ex_valid && md_busy);
-    assign ex_fire  = ex_valid && !stall_ex && !mem_redirect;
+    assign ex_fire  = ex_valid && !stall_ex && !mem_redirect && !br_redir_q;
 
     wire ex_mispredict = !ex_exc && (ex_npc != ex_pred_npc);
     assign ex_redirect    = ex_fire && ex_mispredict;
     assign ex_redirect_pc = ex_npc;
+
+`ifdef BP_DEBUG
+    always @(posedge clk) if (ex_redirect)
+        $display("MISP type=%0d br=%0d jal=%0d jalr=%0d taken=%0d pred_taken_npc=%08x actual=%08x pc=%08x rd=%0d rs1=%0d c=%0d",
+                 bp_upd_type, ex_branch, ex_jal, ex_jalr, ex_taken, ex_pred_npc, ex_npc, ex_pc, ex_rd, ex_rs1, ex_is_c);
+`endif
+    always @(posedge clk) begin
+        if (rst || mem_redirect) begin
+            br_redir_q <= 1'b0;
+        end else begin
+            br_redir_q    <= ex_redirect;
+            br_redir_pc_q <= ex_redirect_pc;
+        end
+    end
 
     // Branch predictor training
     wire ex_ctrl = ex_branch || ex_jal || ex_jalr;
@@ -295,9 +325,19 @@ module rv_core #(
                            (ex_jalr && !rd_link && rs1_link && ex_rd == 5'd0) ? `BT_RET :
                            (ex_rd_we && rd_link) ? `BT_CALL : `BT_JUMP;
 
+    always @(posedge clk) begin
+        bpq_valid   <= !rst && bp_upd_valid;
+        bpq_pc      <= ex_pc;
+        bpq_is_c    <= ex_is_c;
+        bpq_type    <= bp_upd_type;
+        bpq_taken   <= bp_upd_taken;
+        bpq_target  <= bp_upd_target;
+        bpq_bht_idx <= ex_bht_idx;
+    end
+
     // ID/EX register
     always @(posedge clk) begin
-        if (rst || mem_redirect || ex_redirect) begin
+        if (rst || mem_redirect || br_redir_q) begin
             ex_valid <= 1'b0;
         end else if (!stall_ex) begin
             ex_valid <= id_fire;
@@ -531,6 +571,8 @@ module rv_core #(
     //  5: load-use stall cycles              6: decode starved (front end empty)
     //  7: data-bus stall cycles              8: divider stall cycles
     assign hpm_ev[0] = ex_redirect;
+    assign stat_mispredict = ex_redirect;
+    assign stat_ctrl       = bp_upd_valid;
     assign hpm_ev[1] = bp_upd_valid;
     assign hpm_ev[2] = load_use && !stall_ex;
     assign hpm_ev[3] = !fe_valid && !stall_id;

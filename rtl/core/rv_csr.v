@@ -59,8 +59,7 @@ module rv_csr #(
     // ------------------------------------------------------------------
     // Read mux + legality
     reg known;
-    reg is_hpm, is_hpmh, is_hpm_ro, is_hpmh_ro, is_hpmevent;
-    integer k;
+    wire [4:0] hpm_idx = addr[4:0] - 5'd3;
     always @(*) begin
         known = 1'b1;
         rdata = 32'd0;
@@ -91,9 +90,8 @@ module rv_csr #(
                     addr[11:5] == 7'b0011001) begin
                     if (addr[4:0] >= 5'd3) begin
                         known = 1'b1;
-                        for (k = 0; k < NUM_HPM; k = k + 1)
-                            if (addr[4:0] == k + 3 && addr[11:5] != 7'b0011001)
-                                rdata = addr[7] ? hpm[k][63:32] : hpm[k][31:0];
+                        if (hpm_idx < NUM_HPM && addr[11:5] != 7'b0011001)
+                            rdata = addr[7] ? hpm[hpm_idx][63:32] : hpm[hpm_idx][31:0];
                     end
                 end
             end

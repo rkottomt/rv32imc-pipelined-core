@@ -47,7 +47,7 @@ module rvfi_wrapper (
         .dbus_req_ready(d_ready && !d_out), .dbus_resp_valid(d_resp_valid), .dbus_resp_rdata(d_data),
         .fencei(fencei),
         .irq_software(irq_s), .irq_timer(irq_t), .irq_external(irq_e),
-        .dbg_irq(), .dbg_irq_cause(),
+        .dbg_irq(), .dbg_irq_cause(), .stat_mispredict(), .stat_ctrl(),
         `RVFI_CONN
     );
 endmodule

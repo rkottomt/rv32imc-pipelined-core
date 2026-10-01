@@ -68,6 +68,8 @@ module rv_frontend #(
     reg             btb_v   [0:BTB_N-1];
     reg [TAG_W-1:0] btb_tag [0:BTB_N-1];
     reg             btb_off [0:BTB_N-1];   // instruction starts at word+2
+    reg             btb_xe  [0:BTB_N-1];   // 32-bit instruction that started in the
+                                           // previous word and ends in this one
     reg [1:0]       btb_typ [0:BTB_N-1];
     reg             btb_c   [0:BTB_N-1];   // instruction is compressed
     reg [31:1]      btb_tgt [0:BTB_N-1];
@@ -83,6 +85,7 @@ module rv_frontend #(
     reg        fq_start[0:FQ_DEPTH-1];   // first valid halfword is the upper one
     reg        fq_pv   [0:FQ_DEPTH-1];   // carries a taken prediction
     reg        fq_poff [0:FQ_DEPTH-1];   // halfword offset of predicted instruction
+    reg        fq_pxe  [0:FQ_DEPTH-1];   // prediction is for the instruction ending here
     reg [31:0] fq_ptgt [0:FQ_DEPTH-1];
     reg [BHT_BITS-1:0] fq_bidx [0:FQ_DEPTH-1];
     reg        fq_fill [0:FQ_DEPTH-1];   // data has arrived
@@ -104,8 +107,11 @@ module rv_frontend #(
     wire f_cond  = (btb_typ[f_bi] == `BT_COND);
     wire f_taken = (ENABLE_BP != 0) && f_hit && (!f_cond || bht[f_hi][1]);
     wire [31:0] f_target = (btb_typ[f_bi] == `BT_RET) ? ras[ras_top] : {btb_tgt[f_bi], 1'b0};
+    // return address of a predicted call: for a straddling call (xe) the
+    // instruction started 2 bytes before this word, so it ends at word+2
     wire [31:0] f_insn_pc = {fpc[31:2], btb_off[f_bi], 1'b0};
-    wire [31:0] f_ret_addr = f_insn_pc + (btb_c[f_bi] ? 32'd2 : 32'd4);
+    wire [31:0] f_ret_addr = btb_xe[f_bi] ? {fpc[31:2], 2'b10} :
+                             f_insn_pc + (btb_c[f_bi] ? 32'd2 : 32'd4);
 
     assign ibus_req_valid = (count < FQ_DEPTH);
     assign ibus_req_addr  = {fpc[31:2], 2'b00};
@@ -125,10 +131,16 @@ module rv_frontend #(
 
     wire pv   = fq_pv[h];
     wire poff = fq_poff[h];
-    wire pmatch    = pv && (p == poff) && !straddle;
+    wire pxe  = fq_pxe[h];
+    // A straddling instruction takes its prediction from the *next* word
+    // (where it ends), flagged "xe".
+    wire xmatch    = straddle && nv && fq_pv[n] && fq_pxe[n];
+    wire pmatch    = (pv && !pxe && (p == poff) && !straddle) || xmatch;
     // A stale/aliased prediction points at a halfword that is not the start of
-    // an instruction (or at a straddling instruction): drop it and refetch.
-    wire pmismatch = pv && ((p && !poff) || (p == poff && straddle) || (!p && poff && is32));
+    // an instruction (or at a straddling instruction), or an "xe" prediction
+    // reached the head without the straddling instruction that owns it:
+    // drop it and refetch sequentially.
+    wire pmismatch = pv && (pxe || (p && !poff) || (p == poff && straddle) || (!p && poff && is32));
     wire fixup = hv && pmismatch && !redirect_valid;
 
     assign out_valid      = avail && !pmismatch;
@@ -137,14 +149,15 @@ module rv_frontend #(
                             straddle ? {fq_data[n][15:0], lo16} : fq_data[h];
     assign out_is_c       = !is32;
     assign out_pred_taken = pmatch;
-    assign out_pred_npc   = pmatch ? fq_ptgt[h] : out_pc + (is32 ? 32'd4 : 32'd2);
-    assign out_bht_idx    = fq_bidx[h];
+    assign out_pred_npc   = xmatch ? fq_ptgt[n] : pmatch ? fq_ptgt[h] : out_pc + (is32 ? 32'd4 : 32'd2);
+    assign out_bht_idx    = straddle ? fq_bidx[n] : fq_bidx[h];
     assign stat_fixup     = fixup;
 
     wire consume = out_valid && out_ready && !redirect_valid;
     // pop the head word after this instruction?
     wire pop     = consume && (pmatch || is32 || p);
-    wire pos_nxt = straddle ? 1'b1 : (!is32 && !p && !pmatch) ? 1'b1 : 1'b0;
+    wire pop2    = consume && xmatch;          // straddling predicted-taken: drop both words
+    wire pos_nxt = xmatch ? 1'b0 : straddle ? 1'b1 : (!is32 && !p && !pmatch) ? 1'b1 : 1'b0;
 
     wire [2:0] inflight_nxt = inflight + (req_fire ? 3'd1 : 3'd0) - (ibus_resp_valid ? 3'd1 : 3'd0);
     wire resp_keep = ibus_resp_valid && (drop == 3'd0);
@@ -184,6 +197,7 @@ module rv_frontend #(
                     fq_start[tail[PW-1:0]] <= fpc[1];
                     fq_pv   [tail[PW-1:0]] <= f_taken;
                     fq_poff [tail[PW-1:0]] <= btb_off[f_bi];
+                    fq_pxe  [tail[PW-1:0]] <= btb_xe[f_bi];
                     fq_ptgt [tail[PW-1:0]] <= f_target;
                     fq_bidx [tail[PW-1:0]] <= f_hi;
                     fq_fill [tail[PW-1:0]] <= 1'b0;
@@ -196,7 +210,8 @@ module rv_frontend #(
                     fillp <= fillp + 1'b1;
                 end
                 if (consume) begin
-                    if (pop) head <= head + 1'b1;
+                    if (pop2)     head <= head + 2'd2;
+                    else if (pop) head <= head + 1'b1;
                     pos <= pos_nxt;
                 end
             end
@@ -220,10 +235,12 @@ module rv_frontend #(
 
     // ------------------------------------------------------------------
     // Predictor training (non-speculative, from EX)
-    wire [BTB_BITS-1:0] u_bi  = upd_pc[2 +: BTB_BITS];
-    // A 32-bit instruction at word+2 straddles two fetch words; it is never
-    // installed in the BTB (the aligner could not honor the prediction).
-    wire u_alloc = upd_taken && !(upd_pc[1] && !upd_is_c);
+    // A 32-bit instruction at word+2 straddles two fetch words: it is
+    // installed under the word where it *ends* (pc+2), flagged "xe".
+    wire        u_xe   = upd_pc[1] && !upd_is_c;
+    wire [31:0] u_key  = u_xe ? upd_pc + 32'd2 : upd_pc;
+    wire [BTB_BITS-1:0] u_bi = u_key[2 +: BTB_BITS];
+    wire u_alloc = upd_taken;
     integer b;
     always @(posedge clk) begin
         if (rst) begin
@@ -238,8 +255,9 @@ module rv_frontend #(
             end
             if (u_alloc) begin
                 btb_v  [u_bi] <= 1'b1;
-                btb_tag[u_bi] <= upd_pc[31 -: TAG_W];
-                btb_off[u_bi] <= upd_pc[1];
+                btb_tag[u_bi] <= u_key[31 -: TAG_W];
+                btb_off[u_bi] <= u_xe ? 1'b0 : upd_pc[1];
+                btb_xe [u_bi] <= u_xe;
                 btb_typ[u_bi] <= upd_type;
                 btb_c  [u_bi] <= upd_is_c;
                 btb_tgt[u_bi] <= upd_target[31:1];

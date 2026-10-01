@@ -100,7 +100,7 @@ int main(int argc, char** argv) {
     for (int i = 0; i < 5; i++) tick();
     top->rst = 0;
 
-    uint64_t cycle = 0, instret = 0, ic_miss = 0, dc_miss = 0, dc_wb = 0;
+    uint64_t cycle = 0, instret = 0, ic_miss = 0, dc_miss = 0, dc_wb = 0, mispred = 0, ctrl = 0;
     int hold = 0;
     for (cycle = 0; cycle < (uint64_t)max_cycles && !top->sim_exit; cycle++) {
         if (hold > 0) hold--;
@@ -110,6 +110,8 @@ int main(int argc, char** argv) {
         ic_miss += top->stat_icache_miss;
         dc_miss += top->stat_dcache_miss;
         dc_wb   += top->stat_dcache_wb;
+        mispred += top->stat_mispredict;
+        ctrl    += top->stat_ctrl;
         if (top->rvfi_valid) {
             instret++;
             if (trace)
@@ -133,9 +135,10 @@ int main(int argc, char** argv) {
     std::string stats = plusarg_str("stats");
     if (!stats.empty()) {
         FILE* s = fopen(stats.c_str(), "w");
-        fprintf(s, "cycles=%llu\ninstret=%llu\nicache_miss=%llu\ndcache_miss=%llu\ndcache_wb=%llu\n",
+        fprintf(s, "cycles=%llu\ninstret=%llu\nicache_miss=%llu\ndcache_miss=%llu\ndcache_wb=%llu\nmispredict=%llu\nctrl=%llu\n",
                 (unsigned long long)cycle, (unsigned long long)instret, (unsigned long long)ic_miss,
-                (unsigned long long)dc_miss, (unsigned long long)dc_wb);
+                (unsigned long long)dc_miss, (unsigned long long)dc_wb, (unsigned long long)mispred,
+                (unsigned long long)ctrl);
         fclose(s);
     }
     delete top;

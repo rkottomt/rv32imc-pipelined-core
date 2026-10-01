@@ -19,8 +19,8 @@ module rv_periph #(
     output reg         resp_valid,
     output reg  [31:0] resp_rdata,
 
-    output wire        irq_timer,
-    output wire        irq_software,
+    output reg         irq_timer,
+    output reg         irq_software,
     output wire        uart_tx,
     output reg  [7:0]  gpio_out,
     output reg         sim_exit,
@@ -35,8 +35,11 @@ module rv_periph #(
     // ---------------- CLINT
     reg [63:0] mtime, mtimecmp;
     reg        msip;
-    assign irq_timer    = mtime >= mtimecmp;
-    assign irq_software = msip;
+    // registered: keeps the 64-bit compare out of the core's trap logic path
+    always @(posedge clk) begin
+        irq_timer    <= !rst && (mtime >= mtimecmp);
+        irq_software <= !rst && msip;
+    end
 
     // ---------------- UART transmitter (8N1)
     reg [9:0]  tx_shift;

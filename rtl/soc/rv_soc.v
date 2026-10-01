@@ -18,6 +18,8 @@ module rv_soc #(
     parameter        DCACHE        = 1,
     parameter        CACHE_SET_BITS= 7,      // 2 ways x 128 sets x 16 B = 4 KiB each
     parameter        ENABLE_BP     = 1,
+    parameter        BTB_BITS      = 6,
+    parameter        BHT_BITS      = 8,
     parameter        UART_CLKS_PER_BIT = 434
 ) (
     input  wire        clk,
@@ -45,7 +47,9 @@ module rv_soc #(
     // performance counters for the testbench
     output wire        stat_icache_miss,
     output wire        stat_dcache_miss,
-    output wire        stat_dcache_wb
+    output wire        stat_dcache_wb,
+    output wire        stat_mispredict,
+    output wire        stat_ctrl
 );
     // ---------------- core
     wire        ib_req_valid, ib_req_ready, ib_resp_valid;
@@ -54,8 +58,10 @@ module rv_soc #(
     wire [31:0] db_req_addr, db_req_wdata, db_resp_rdata;
     wire [3:0]  db_req_be;
     wire        fencei, irq_timer, irq_software;
+    reg         irq_ext_q;                       // register the external IRQ pin
+    always @(posedge clk) irq_ext_q <= !rst && irq_external;
 
-    rv_core #(.HART_ID(0), .ENABLE_BP(ENABLE_BP)) u_core (
+    rv_core #(.HART_ID(0), .ENABLE_BP(ENABLE_BP), .BTB_BITS(BTB_BITS), .BHT_BITS(BHT_BITS)) u_core (
         .clk(clk), .rst(rst), .boot_addr(BOOT_ADDR),
         .ibus_req_valid(ib_req_valid), .ibus_req_addr(ib_req_addr), .ibus_req_ready(ib_req_ready),
         .ibus_resp_valid(ib_resp_valid), .ibus_resp_data(ib_resp_data),
@@ -63,7 +69,7 @@ module rv_soc #(
         .dbus_req_be(db_req_be), .dbus_req_wdata(db_req_wdata), .dbus_req_flush(db_req_flush),
         .dbus_req_ready(db_req_ready), .dbus_resp_valid(db_resp_valid), .dbus_resp_rdata(db_resp_rdata),
         .fencei(fencei),
-        .irq_software(irq_software), .irq_timer(irq_timer), .irq_external(irq_external),
+        .irq_software(irq_software), .irq_timer(irq_timer), .irq_external(irq_ext_q),
         .rvfi_valid(rvfi_valid), .rvfi_order(), .rvfi_insn(rvfi_insn), .rvfi_trap(rvfi_trap),
         .rvfi_halt(), .rvfi_intr(rvfi_intr), .rvfi_mode(), .rvfi_ixl(),
         .rvfi_rs1_addr(), .rvfi_rs2_addr(), .rvfi_rs1_rdata(), .rvfi_rs2_rdata(),
@@ -71,7 +77,8 @@ module rv_soc #(
         .rvfi_pc_rdata(rvfi_pc_rdata), .rvfi_pc_wdata(rvfi_pc_wdata),
         .rvfi_mem_addr(rvfi_mem_addr), .rvfi_mem_rmask(rvfi_mem_rmask), .rvfi_mem_wmask(rvfi_mem_wmask),
         .rvfi_mem_rdata(), .rvfi_mem_wdata(),
-        .dbg_irq(dbg_irq), .dbg_irq_cause(dbg_irq_cause)
+        .dbg_irq(dbg_irq), .dbg_irq_cause(dbg_irq_cause),
+        .stat_mispredict(stat_mispredict), .stat_ctrl(stat_ctrl)
     );
 
     // ---------------- caches (or pass-through)

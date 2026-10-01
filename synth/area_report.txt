@@ -1,0 +1,318 @@
+
+17. Printing statistics.
+
+=== rv_soc ===
+
+        +----------Local Count, excluding submodules.
+        | 
+      110 wires
+      768 wire bits
+      110 public wires
+      768 public wire bits
+       23 ports
+      230 port bits
+       46 cells
+       42   LUT4
+        3   PFUMX
+        1   TRELLIS_FF
+        6 submodules
+        1   $paramod$4d03dac162a6b9974dd47fb29eb4eff59fcc19be\rv_ram
+        1   $paramod$fdf102e8f291cf6496384fb16088d87213e36cab\rv_core
+        1   $paramod\rv_dcache\SET_BITS=s32'00000000000000000000000000000111
+        1   $paramod\rv_icache\SET_BITS=s32'00000000000000000000000000000111
+        1   $paramod\rv_periph\CLKS_PER_BIT=s32'00000000000000000000000110110010
+        1   rv_bus_arbiter
+
+=== $paramod$fdf102e8f291cf6496384fb16088d87213e36cab\rv_core ===
+
+        +----------Local Count, excluding submodules.
+        | 
+     2023 wires
+     5128 wire bits
+     2023 public wires
+     5128 public wire bits
+       44 ports
+      599 port bits
+     3295 cells
+       96   CCU2C
+       96   L6MUX21
+     1458   LUT4
+      261   PFUMX
+     1384   TRELLIS_FF
+        7 submodules
+        1   $paramod$22a8bb868bac501e838d84adc2093bdabf797d86\rv_frontend
+        1   $paramod$d4c125f77ebad3c65dc3697780e9274e57471c43\rv_csr
+        1   rv_alu
+        1   rv_decode
+        1   rv_muldiv
+        1   rv_regfile
+        1   rv_rvc_expand
+
+=== $paramod$4d03dac162a6b9974dd47fb29eb4eff59fcc19be\rv_ram ===
+
+        +----------Local Count, excluding submodules.
+        | 
+     1138 wires
+     1278 wire bits
+     1138 public wires
+     1278 public wire bits
+       10 ports
+      106 port bits
+       37 cells
+       32   DP16KD
+        4   LUT4
+        1   TRELLIS_FF
+
+=== rv_bus_arbiter ===
+
+        +----------Local Count, excluding submodules.
+        | 
+       35 wires
+      323 wire bits
+       35 public wires
+      323 public wire bits
+       26 ports
+      314 port bits
+       83 cells
+       79   LUT4
+        2   PFUMX
+        2   TRELLIS_FF
+
+=== $paramod\rv_periph\CLKS_PER_BIT=s32'00000000000000000000000110110010 ===
+
+        +----------Local Count, excluding submodules.
+        | 
+      721 wires
+     1456 wire bits
+      721 public wires
+     1456 public wire bits
+       16 ports
+      150 port bits
+      839 cells
+       72   CCU2C
+       39   L6MUX21
+      386   LUT4
+      107   PFUMX
+      235   TRELLIS_FF
+
+=== $paramod\rv_icache\SET_BITS=s32'00000000000000000000000000000111 ===
+
+        +----------Local Count, excluding submodules.
+        | 
+     1493 wires
+     3465 wire bits
+     1493 public wires
+     3465 public wire bits
+       14 ports
+      138 port bits
+     1784 cells
+        4   CCU2C
+       12   DP16KD
+       24   L6MUX21
+     1199   LUT4
+       69   PFUMX
+      476   TRELLIS_FF
+        2 submodules
+        2   $paramod\rv_sram\AW=s32'00000000000000000000000000001001
+
+=== $paramod\rv_dcache\SET_BITS=s32'00000000000000000000000000000111 ===
+
+        +----------Local Count, excluding submodules.
+        | 
+     4475 wires
+     9387 wire bits
+     4475 public wires
+     9387 public wire bits
+       21 ports
+      213 port bits
+     6140 cells
+       12   CCU2C
+      356   L6MUX21
+     3971   LUT4
+      767   PFUMX
+      192   TRELLIS_DPR16X4
+      842   TRELLIS_FF
+        2 submodules
+        2   $paramod\rv_sram\AW=s32'00000000000000000000000000001001
+
+=== rv_rvc_expand ===
+
+        +----------Local Count, excluding submodules.
+        | 
+      277 wires
+      547 wire bits
+      277 public wires
+      547 public wire bits
+        3 ports
+       49 port bits
+      357 cells
+       33   L6MUX21
+      249   LUT4
+       75   PFUMX
+
+=== rv_regfile ===
+
+        +----------Local Count, excluding submodules.
+        | 
+      178 wires
+      618 wire bits
+      178 public wires
+      618 public wire bits
+        8 ports
+      113 port bits
+      210 cells
+        6   L6MUX21
+      160   LUT4
+       12   PFUMX
+       32   TRELLIS_DPR16X4
+
+=== rv_muldiv ===
+
+        +----------Local Count, excluding submodules.
+        | 
+      836 wires
+     1820 wire bits
+      836 public wires
+     1820 public wire bits
+       11 ports
+      106 port bits
+      770 cells
+      138   CCU2C
+      354   LUT4
+        4   MULT18X18D
+       68   PFUMX
+      206   TRELLIS_FF
+
+=== $paramod\rv_sram\AW=s32'00000000000000000000000000001001 ===
+
+        +----------Local Count, excluding submodules.
+        | 
+      126 wires
+      305 wire bits
+      126 public wires
+      305 public wire bits
+        7 ports
+       88 port bits
+      162 cells
+        1   DP16KD
+        7   L6MUX21
+       61   LUT4
+       12   PFUMX
+       81   TRELLIS_FF
+
+=== rv_decode ===
+
+        +----------Local Count, excluding submodules.
+        | 
+      130 wires
+      384 wire bits
+      130 public wires
+      384 public wire bits
+       31 ports
+      113 port bits
+      182 cells
+        9   L6MUX21
+      151   LUT4
+       22   PFUMX
+
+=== $paramod$22a8bb868bac501e838d84adc2093bdabf797d86\rv_frontend ===
+
+        +----------Local Count, excluding submodules.
+        | 
+     4463 wires
+     8254 wire bits
+     4463 public wires
+     8254 public wire bits
+       26 ports
+      320 port bits
+     5075 cells
+       62   CCU2C
+        2   DP16KD
+      397   L6MUX21
+     2882   LUT4
+      968   PFUMX
+       50   TRELLIS_DPR16X4
+      714   TRELLIS_FF
+
+=== $paramod$d4c125f77ebad3c65dc3697780e9274e57471c43\rv_csr ===
+
+        +----------Local Count, excluding submodules.
+        | 
+     4354 wires
+     9034 wire bits
+     4354 public wires
+     9034 public wire bits
+       24 ports
+      234 port bits
+     4802 cells
+      273   CCU2C
+      268   L6MUX21
+     2709   LUT4
+      877   PFUMX
+      675   TRELLIS_FF
+
+=== rv_alu ===
+
+        +----------Local Count, excluding submodules.
+        | 
+      903 wires
+     1778 wire bits
+      903 public wires
+     1778 public wire bits
+        4 ports
+      100 port bits
+     1130 cells
+       32   CCU2C
+       91   L6MUX21
+      770   LUT4
+      237   PFUMX
+
+=== design hierarchy ===
+
+        +----------Count including submodules.
+        | 
+    25398 rv_soc
+       37 $paramod$4d03dac162a6b9974dd47fb29eb4eff59fcc19be\rv_ram
+     3295 $paramod$fdf102e8f291cf6496384fb16088d87213e36cab\rv_core
+     5075   $paramod$22a8bb868bac501e838d84adc2093bdabf797d86\rv_frontend
+     4802   $paramod$d4c125f77ebad3c65dc3697780e9274e57471c43\rv_csr
+     1130   rv_alu
+      182   rv_decode
+      770   rv_muldiv
+      210   rv_regfile
+      357   rv_rvc_expand
+     6140 $paramod\rv_dcache\SET_BITS=s32'00000000000000000000000000000111
+      162   $paramod\rv_sram\AW=s32'00000000000000000000000000001001
+     1784 $paramod\rv_icache\SET_BITS=s32'00000000000000000000000000000111
+      162   $paramod\rv_sram\AW=s32'00000000000000000000000000001001
+      839 $paramod\rv_periph\CLKS_PER_BIT=s32'00000000000000000000000110110010
+       83 rv_bus_arbiter
+
+        +----------Count including submodules.
+        | 
+    21640 wires
+    45460 wire bits
+    21640 public wires
+    45460 public wire bits
+      289 ports
+     3137 port bits
+        - memories
+        - memory bits
+        - processes
+    25398 cells
+      689   CCU2C
+       50   DP16KD
+     1347   L6MUX21
+    14658   LUT4
+        4   MULT18X18D
+     3516   PFUMX
+      274   TRELLIS_DPR16X4
+     4860   TRELLIS_FF
+        6 submodules
+        1   $paramod$4d03dac162a6b9974dd47fb29eb4eff59fcc19be\rv_ram
+        1   $paramod$fdf102e8f291cf6496384fb16088d87213e36cab\rv_core
+        1   $paramod\rv_dcache\SET_BITS=s32'00000000000000000000000000000111
+        1   $paramod\rv_icache\SET_BITS=s32'00000000000000000000000000000111
+        1   $paramod\rv_periph\CLKS_PER_BIT=s32'00000000000000000000000110110010
+        1   rv_bus_arbiter
+
