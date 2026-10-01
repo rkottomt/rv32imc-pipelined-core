@@ -183,6 +183,7 @@ int main(int argc, char** argv) {
         bool ireq = top->ibus_req_valid && top->ibus_req_ready;
         uint32_t iaddr = top->ibus_req_addr;
         bool dreq = top->dbus_req_valid && top->dbus_req_ready;
+        bool dflush = top->dbus_req_flush;
         uint32_t daddr = top->dbus_req_addr, dwdata = top->dbus_req_wdata;
         bool dwe = top->dbus_req_we;
         unsigned dbe = top->dbus_req_be;
@@ -208,11 +209,14 @@ int main(int argc, char** argv) {
         if (dreq) {
             uint32_t rdata = 0;
             uint32_t a = daddr;
-            if (a == UART_TX && dwe) {
+            if (dflush) {
+                // FENCE.I write-back request: nothing cached here, just ack
+            } else if (a == UART_TX && dwe) {
                 char c = dwdata & 0xff;
                 putchar(c); fflush(stdout);
             } else if (a == SIM_CTRL && dwe) {
-                exit_code = dwdata;
+                // "tohost" convention: 1 = pass, otherwise (code << 1) | 1
+                if (dwdata) exit_code = (dwdata == 1) ? 0 : (int)(dwdata >> 1);
             } else if (a >= CLINT_BASE && a < CLINT_BASE + 0x10000) {
                 if (dwe) {
                     if (a == CLINT_MSIP) msip = dwdata;

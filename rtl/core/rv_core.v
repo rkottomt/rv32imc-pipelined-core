@@ -34,6 +34,7 @@ module rv_core #(
     output wire        dbus_req_we,
     output wire [3:0]  dbus_req_be,
     output wire [31:0] dbus_req_wdata,
+    output wire        dbus_req_flush,  // FENCE.I: write back dirty D-cache lines
     input  wire        dbus_req_ready,
     input  wire        dbus_resp_valid,
     input  wire [31:0] dbus_resp_rdata,
@@ -439,12 +440,16 @@ module rv_core #(
     );
 
     // Data bus request (single outstanding; issued only when MEM can advance)
-    wire mem_mem_op = mem_valid && (mem_load || mem_store) && !mem_trap;
+    // FENCE.I also goes to the data bus as a "flush" request: the D-cache only
+    // accepts it once all dirty lines are written back, so instruction fetch
+    // after the FENCE.I observes earlier stores (self-modifying code).
+    wire mem_mem_op = mem_valid && (mem_load || mem_store || mem_fencei) && !mem_trap;
     assign dbus_req_valid = mem_mem_op && !stall_wb;
     assign dbus_req_addr  = {mem_addr[31:2], 2'b00};
     assign dbus_req_we    = mem_store;
     assign dbus_req_be    = mem_store ? mem_be : 4'b1111;
     assign dbus_req_wdata = mem_wdata;
+    assign dbus_req_flush = mem_fencei;
 
     assign stall_mem = stall_wb || (mem_mem_op && !dbus_req_ready);
     assign mem_fire  = mem_valid && !stall_mem;
@@ -458,7 +463,7 @@ module rv_core #(
     reg  [31:0] wb_pc, wb_insn, wb_npc, wb_result, wb_addr, wb_wdata;
     reg  [3:0]  wb_be;
     reg  [4:0]  wb_rd;
-    reg         wb_rd_we, wb_load, wb_store, wb_munsigned, wb_trap;
+    reg         wb_rd_we, wb_load, wb_store, wb_munsigned, wb_trap, wb_flush;
     reg  [1:0]  wb_msize;
     reg  [4:0]  wb_rs1, wb_rs2;
     reg  [31:0] wb_rs1_val, wb_rs2_val;
@@ -483,6 +488,7 @@ module rv_core #(
                 wb_be        <= mem_be;
                 wb_load      <= mem_load && !mem_trap;
                 wb_store     <= mem_store && !mem_trap;
+                wb_flush     <= mem_fencei && !mem_trap;
                 wb_msize     <= mem_msize;
                 wb_munsigned <= mem_munsigned;
                 wb_trap      <= mem_trap;
@@ -494,7 +500,7 @@ module rv_core #(
         end
     end
 
-    wire wb_wait = wb_valid && (wb_load || wb_store);
+    wire wb_wait = wb_valid && (wb_load || wb_store || wb_flush);
     assign stall_wb = wb_wait && !dbus_resp_valid;
 
     // Load data extraction

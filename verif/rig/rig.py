@@ -269,9 +269,10 @@ _start:
         while len(self.lines) < self.length:
             self.one()
         out += self.lines
-        out.append("""    # ---- end of test: write exit code 0 to the simulation controller
+        out.append("""    # ---- end of test: write 1 ("pass") to the simulation controller
     li x29, 0x10002000
-    sw x0, 0(x29)
+    li x28, 1
+    sw x28, 0(x29)
 1:  j 1b
 """)
         # leaf functions (exercise call/return prediction)
