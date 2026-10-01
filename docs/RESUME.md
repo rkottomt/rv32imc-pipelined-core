@@ -28,7 +28,7 @@
   - a branch-predictor design flaw found through profiling (**+11% IPC**).
 
 **Implementation / performance**
-- Closed timing on a Lattice ECP5 FPGA: improved Fmax **24.7 → 31.1 MHz (+26%)** by analyzing critical paths and re-pipelining (redirect, interrupt, predictor-training and multiplier paths). Quantified the IPC/frequency trade-offs.
+- Closed timing on a Lattice ECP5 FPGA: improved Fmax **24.7 → 34.7 MHz (+40%)** by analyzing critical paths and re-pipelining (redirect, interrupt, predictor-training, performance-counter and multiplier paths). Quantified the IPC/frequency trade-offs.
 - Ran a micro-architectural design-space study:
   - caches give >10× speedup with DRAM-like latency;
   - branch prediction gives +30%;

@@ -13,7 +13,7 @@
 > Verification found real bugs: a divider operand race, a formal-only trap
 > corner case, and a branch-predictor flaw I found through performance
 > profiling that cost 11% IPC. It runs CoreMark at 2.9 CoreMark/MHz and
-> closes timing at 31 MHz on a Lattice ECP5."
+> closes timing at 35 MHz on a Lattice ECP5."
 
 ## The 2-minute walkthrough (draw this)
 ```
@@ -44,7 +44,7 @@ Hit these points in order:
    - *Situation*: 28% mispredict rate.
    - *Action*: a size sweep ruled out capacity, a debug build showed all offenders were straddling 32-bit branches, and I redesigned BTB keying.
    - *Result*: +11% IPC.
-5. **Timing closure 24.7 → 31.1 MHz**: read the nextpnr critical path, broke combinational paths across stages (registered redirect, IRQs, predictor training, pipelined MUL). Each change was re-verified, and the next step is quantified (6th stage, ~+25% net).
+5. **Timing closure 24.7 → 34.7 MHz**: read the nextpnr critical path, broke combinational paths across stages (registered redirect, IRQs, predictor training, pipelined MUL). Each change was re-verified, and the next step is quantified (6th stage, ~+25% net).
 
 ## Likely questions and crisp answers
 

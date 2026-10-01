@@ -466,6 +466,11 @@ module rv_core #(
 
     wire retire;
     wire [5:0] hpm_ev;
+    // performance events are registered before they reach the counters
+    // (count one cycle late) to keep them off the critical timing paths
+    reg [5:0] hpm_ev_q;
+    always @(posedge clk) hpm_ev_q <= rst ? 6'd0 : hpm_ev;
+
     rv_csr #(.HART_ID(HART_ID), .NUM_HPM(6)) u_csr (
         .clk(clk), .rst(rst),
         .addr(mem_csr_addr), .access(mem_csr_access), .wr_intent(mem_csr_wr),
@@ -477,7 +482,7 @@ module rv_core #(
         .trap_vector(trap_vector), .mepc_o(csr_mepc),
         .irq_software(irq_software), .irq_timer(irq_timer), .irq_external(irq_external),
         .irq_pending(irq_pending), .irq_cause(irq_cause),
-        .retire(retire), .hpm_events(hpm_ev)
+        .retire(retire), .hpm_events(hpm_ev_q)
     );
 
     // Data bus request (single outstanding; issued only when MEM can advance)

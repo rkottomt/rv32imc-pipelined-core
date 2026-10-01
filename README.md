@@ -18,7 +18,7 @@ It runs on a Lattice ECP5 FPGA through a fully open-source flow.
 | **Memory** | 2-way I-cache (pipelined hits); 2-way **write-back** D-cache with store→load bypass; FENCE.I coherence (D$ flush + I$ invalidate) |
 | **SoC** | Bus arbiter, 64 KiB RAM (optional DRAM-like latency), CLINT timer, UART, GPIO |
 | **Performance** | **2.88 CoreMark/MHz**, **1.03 DMIPS/MHz**, CoreMark IPC 0.81 |
-| **FPGA** | ECP5-85F: 15% LUTs, 25% BRAM, **31.1 MHz** after timing closure (from 24.7) |
+| **FPGA** | ECP5-85F: 17% LUTs, 24% BRAM, **34.7 MHz** after timing closure (from 24.7) |
 
 ## Verification at a glance
 

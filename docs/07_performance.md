@@ -10,7 +10,7 @@ Each configuration is a set of Verilog parameter overrides, built and run in Ver
 | CoreMark (2K perf run, `-O3`) | **2.88 CoreMark/MHz** | 0.81 |
 | Dhrystone 2.2 (`-O2 -fno-inline`) | **1.03 DMIPS/MHz** | 0.70 |
 
-At 31 MHz on the ECP5 that is about **89 CoreMark** (iterations/s).
+At 34.7 MHz on the ECP5 that is about **100 CoreMark** (iterations/s).
 - Context: PicoRV32 is ~0.5 CoreMark/MHz.
 - Single-issue 5-stage designs like this one usually land around 2–3.
 - CoreMark's output-CRC checks pass in every configuration (list/matrix/state CRCs = EEMBC reference values).

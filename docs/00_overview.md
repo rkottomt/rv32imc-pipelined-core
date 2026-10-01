@@ -56,7 +56,7 @@ Read the docs in order. Each one ends with interview Q&A.
   - Bug: `rvfi_intr` when the handler's first instruction traps.
 - **M6 Software.** C runtime, CoreMark and Dhrystone ports, directed tests (timer/software IRQs, vectored `mtvec`, self-modifying code).
 - **M7 FPGA.**
-  - ECP5 synthesis/PnR; timing closure 24.7 → 31.1 MHz.
+  - ECP5 synthesis/PnR; timing closure 24.7 → 34.7 MHz.
   - Lint finding: inferred latch in the CSR read mux.
 - **M8 Performance.**
   - Design-space study.

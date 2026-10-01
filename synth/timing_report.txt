@@ -1,0 +1,11 @@
+# nextpnr-ecp5 timing/utilization summary (LFE5U-85F, target 60 MHz)
+Info: 	              DP16KD:      50/    208    24%
+Info: 	          MULT18X18D:       4/    156     2%
+Info: 	          TRELLIS_FF:    3907/  83640     4%
+Info: 	        TRELLIS_COMB:   14632/  83640    17%
+Info: 	        TRELLIS_RAMW:     278/  10455     2%
+Warning: Max frequency for clock '$glbnet$clk_25mhz$TRELLIS_IO_IN': 34.69 MHz (FAIL at 60.00 MHz)
+
+## Critical path (load data -> forwarding; see docs/06_fpga_timing.md)
+Info: 12.68 ns logic, 16.15 ns routing
+
