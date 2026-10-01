@@ -98,7 +98,6 @@ Result: **234/234 bins = 100%**.
 | 1 | riscv-tests `instret_overflow` | `minstret` counted at WB, so a CSR read in MEM missed the instruction just ahead of it | Count retirement at the MEM commit point; CSR writes to the counter suppress that cycle's increment |
 | 2 | Random co-sim (12/20 seeds failed) | **Divider latched a stale operand.** DIV directly after a load, with memory latency > 1: the divider captured operands on its first EX cycle while the load was still waiting in WB, so the bypass returned the old register value. | The divider only starts when there is no MEM/WB stall (`hold` input), i.e. when the bypass network is valid |
 | 3 | Random (timeouts) | *Testbench bug, not RTL*: generator emitted `auipc+jalr +12`, which lands mid-instruction when the next `nop` gets compressed | Use `%pcrel_hi/%pcrel_lo` relocations. Co-sim showed RTL == ISS, which pointed straight at the program |
-
 | 4 | riscv-formal `pc_fwd` | `rvfi_intr` not set when the first instruction of a trap handler itself traps (interrupt → handler → illegal instruction) | Flag the first record after *any* trap event. This also fixed the co-sim IRQ flag for that case |
 | 5 | Yosys (synthesis lint) | Latch inferred for a `for`-loop variable in the CSR read mux (only assigned on some paths) | Direct indexing instead of a loop |
 | 6 | Performance profiling | Branch predictor never predicted 32-bit branches straddling two fetch words, so ~half the branches in compressed code were unpredictable (28% mispredict) | Key them by their *end* word (`xe` flag): 10% mispredict, +11% IPC |
