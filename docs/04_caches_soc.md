@@ -61,7 +61,7 @@ The official `rv32ui-fence_i` test checks this end-to-end and passes on the SoC.
 - **Exhaustive**: all 49,152 16-bit compressed encodings checked against the ISS expander.
 - **M-unit**: 6,600 operations, including the full corner-value cross product (0, ±1, INT_MIN, INT_MAX, …).
 
-## Interview Q&A
+## Design Q&A
 - **Write-back vs write-through?** Write-back sends only evicted dirty lines to memory, which means far less bus traffic for stack- and loop-heavy code. The cost is dirty-line handling and a flush operation for coherence (FENCE.I, DMA).
 - **Why replay after refill instead of serving the miss directly?** One code path (the hit path) handles both loads and stores. The extra cycle is negligible next to a refill.
 - **Read-during-write hazard?** Block RAMs return old data when reading the address being written that cycle, so the cache forwards the last store. A classic FPGA-specific bug. It's documented in the BRAM primitive's datasheet as `READ_FIRST` mode.

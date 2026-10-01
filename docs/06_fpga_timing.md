@@ -25,7 +25,7 @@ Per-module (from `synth/area_report.txt`):
 - **RVC expander**: ~250 LUT.
 - **register file**: 32 DPR16X4 LUT-RAM cells.
 
-## Timing closure log (a strong interview story)
+## Timing closure log
 Fmax measured with nextpnr targeting 60 MHz. The constraint file originally pinned 25 MHz, and nextpnr stops optimizing once a target is met, so it had to be removed to see the true Fmax.
 
 | Step | Change | Fmax | Cost |
@@ -58,7 +58,7 @@ Fmax measured with nextpnr targeting 60 MHz. The constraint file originally pinn
 ### Every timing change is re-verified
 After each step: riscv-tests on the core and SoC, the random co-sim regression (100 seeds core + 30 seeds tiny-cache SoC), cocotb unit tests and CoreMark. Timing changes are exactly where pipeline bugs come from, e.g. stale operands after adding a stage.
 
-## Interview Q&A
+## Design Q&A
 - **Why is routing more than half of the critical path?** FPGA routing goes through programmable switches. Long paths that cross many modules are spread across the die. Pipelining shortens paths *and* lets the placer cluster logic.
 - **Why register the mispredict instead of making the comparison faster?** The comparison sits at the end of the longest datapath (forward → add → compare). Registering it removes the downstream fetch logic from that path entirely, for a 1-cycle penalty on about 10% of branches.
 - **How do you know the critical path isn't a false path?** Here everything is single-clock and functional. Multi-clock designs need CDC constraints or false-path declarations.

@@ -42,7 +42,7 @@ Total: **77/77 checks pass, zero failures.**
 - Depth 12 is enough to cover a full trip through the pipeline: instructions retire about 7 cycles after reset.
 - `pc_fwd` is the check that caught the `rvfi_intr` bug on the earlier RTL.
 
-## Solver engineering (interview story)
+## Solver engineering
 - **Bitwuzla**, the default here, did not finish `insn_add` in more than 10 minutes at depth 24. Depth 12 is enough for this pipeline, since an instruction retires about 7 cycles after reset.
 - Benchmarked three engines on the same check:
 
@@ -72,7 +72,7 @@ JOBS=8 formal/run.sh               # parallelism
 ```
 Results go to `third_party/riscv-formal/cores/rvcore/checks/<check>/status`. Counterexamples are in `.../engine_0/trace.vcd`; open them in GTKWave.
 
-## Interview Q&A
+## Design Q&A
 - **BMC vs full proof?** BMC proves "no bug within N cycles of reset". For a pipeline that drains in ~7 cycles, and with *any* program state reachable in that window, this is very strong for per-instruction properties. Unbounded proofs need k-induction plus invariants. Future work.
 - **Why ALTOPS?** The point is to verify the pipeline's control. Proving the multiplier is a separate, much harder (equivalence-checking) problem. Simulation with a large corner-case vector set covers it.
 - **Why constrain the environment at all?** To match real hardware. An unconstrained bus that sends responses nobody asked for would produce false failures. Under-constraining hides nothing. Over-constraining can hide bugs, so the wrapper only encodes the protocol rules.

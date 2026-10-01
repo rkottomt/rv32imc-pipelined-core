@@ -53,7 +53,7 @@
   - 0–49% random back-pressure;
   - random external interrupts (every other seed).
 
-## Coverage closure (a good interview story)
+## Coverage closure
 The first coverage run hit **75.8%**. The report showed *real blind spots in the generator*:
 1. **Load/store addresses always came from the never-written base register.** Address-generation hazards (`addi`→`lw` base, pointer-chasing `lw`→`lw`) were never tested. *Fix*: computed and loaded base pointers.
 2. **The assembler silently compressed `jalr`/`ebreak`**, so the 32-bit forms never ran. *Fix*: `.option norvc` regions.
@@ -91,7 +91,7 @@ Result: **234/234 bins = 100%**.
 - **Round 2: 16/16.**
 - *Lesson*: a passing regression proves nothing about bugs it cannot observe. Mutation testing measures the regression's ability to *detect*, not just to *pass*.
 
-## Bugs found by verification (keep this list. Interviewers love it)
+## Bugs found by verification
 
 | # | Found by | Bug | Fix |
 |---|---|---|---|
@@ -122,7 +122,7 @@ python3 verif/mutation/mutate.py                      # mutation testing
 make regress                                          # everything except formal
 ```
 
-## Interview Q&A
+## Design Q&A
 - **Why is a golden-model comparison better than self-checking tests?** A self-checking test only checks what its author thought to check. Co-sim checks *every* architectural effect of *every* instruction, so random programs need no expected values.
 - **How do you handle interrupts in co-sim, since they're timing-dependent?** The DUT decides when and the model follows: the RTL trace marks where an interrupt was taken, and the ISS takes it at the same instruction boundary. What we verify is that the RTL takes it *precisely* (correct `mepc`/`mcause`, nothing lost or duplicated).
 - **What does 100% functional coverage *not* tell you?** That the checker is right, or that untracked scenarios work. Hence code coverage, formal proofs and mutation testing as complements.

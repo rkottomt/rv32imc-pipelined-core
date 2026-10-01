@@ -89,7 +89,7 @@ verif/mutation/ mutation testing
 formal/       riscv-formal configuration + wrapper
 sw/           C runtime, CoreMark/Dhrystone ports, directed tests, linker scripts
 synth/        ECP5 (ULX3S) top, constraints, synthesis/PnR flow, area report
-docs/         design + verification write-ups and interview prep (start at 00_overview.md)
+docs/         design + verification write-ups (start at 00_overview.md)
 ```
 
 ## Documentation
@@ -101,4 +101,3 @@ docs/         design + verification write-ups and interview prep (start at 00_ov
 6. [Formal verification](docs/05_formal.md)
 7. [FPGA implementation & timing closure](docs/06_fpga_timing.md)
 8. [Performance analysis](docs/07_performance.md) / [raw results](docs/perf_results.md)
-9. [Interview prep](docs/08_interview_prep.md)

@@ -27,7 +27,7 @@ At 34.7 MHz on the ECP5 that is about **100 CoreMark** (iterations/s).
 | 10-cycle memory, 1 KiB caches | 1.76 | 0.49 | 1 KiB thrashes (70k I-misses) |
 | 10-cycle memory, 16 KiB caches | 2.98 | 0.83 | CoreMark's code fits: I-misses 24k → 836 |
 
-## The branch predictor bug that profiling found (great interview story)
+## The branch predictor bug that profiling found
 
 **Symptom.** The first study showed a **27.8% mispredict rate** with gshare enabled, far too high. A bigger BTB and BHT barely helped (309k → 278k mispredicts). That says *structural problem*, not capacity.
 
@@ -67,7 +67,7 @@ At 34.7 MHz on the ECP5 that is about **100 CoreMark** (iterations/s).
   3. A next-line I-prefetcher.
   4. A faster radix-4 divider.
 
-## Interview Q&A
+## Design Q&A
 - **How do you measure IPC in hardware?** `mcycle`/`minstret` CSRs, plus the `mhpmcounter3-8` performance counters this core implements:
   - mispredicts, control-flow instructions;
   - load-use stall cycles, front-end-starved cycles;
