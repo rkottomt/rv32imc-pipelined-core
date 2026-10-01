@@ -1,12 +1,14 @@
 # RV32IMC Pipelined RISC-V CPU + SoC: Design & Verification
 
+[![CI](https://github.com/rkottomt/rv32imc-pipelined-core/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/rkottomt/rv32imc-pipelined-core/actions/workflows/ci.yml)
+
 A 5-stage, in-order, pipelined **RISC-V (RV32IMC + Zicsr, machine mode)** processor written in Verilog. It comes with caches, branch prediction and a small SoC, and is verified with the techniques an industry DV team uses:
 - golden-model co-simulation;
 - constrained-random stimulus with functional coverage;
 - formal proofs;
 - mutation testing.
 
-It runs on a Lattice ECP5 FPGA through a fully open-source flow.
+It targets a Lattice ECP5 FPGA (ULX3S board) through a fully open-source synthesis and place-and-route flow.
 
 ## Highlights
 
@@ -18,7 +20,7 @@ It runs on a Lattice ECP5 FPGA through a fully open-source flow.
 | **Memory** | 2-way I-cache (pipelined hits); 2-way **write-back** D-cache with store→load bypass; FENCE.I coherence (D$ flush + I$ invalidate) |
 | **SoC** | Bus arbiter, 64 KiB RAM (optional DRAM-like latency), CLINT timer, UART, GPIO |
 | **Performance** | **2.88 CoreMark/MHz**, **1.03 DMIPS/MHz**, CoreMark IPC 0.81 |
-| **FPGA** | ECP5-85F: 17% LUTs, 24% BRAM, **34.7 MHz** after timing closure (from 24.7) |
+| **FPGA** | ECP5-85F: 17% LUTs, 24% BRAM, **34.7 MHz** post-route Fmax after timing closure (from 24.7) |
 
 ## Verification at a glance
 
@@ -41,23 +43,12 @@ It runs on a Lattice ECP5 FPGA through a fully open-source flow.
 - a branch-predictor design flaw costing 11% IPC (performance profiling).
 
 ## Architecture
-```
- ┌──────────────────────────────── rv_core ─────────────────────────────────┐
- │  IF            ID                EX               MEM           WB       │
- │ fetch PC ─► fetch queue ─► align/RVC ─► ALU/MUL/DIV ─► D-bus/CSR ─► load │
- │  BTB/gshare/RAS          decode/regs   branch resolve   trap/IRQ    align │
- │      ▲                        │ hazards      │ forward ◄──┴───────────┘   │
- │      └──────── redirect ◄─────┴──────────────┴── (mispredict / trap)     │
- └──────┬──────────────────────────────────────────────┬────────────────────┘
-        ▼ ibus                                         ▼ dbus
-   ┌─────────┐                                   ┌─────────┐
-   │ I-cache │                                   │ D-cache │ write-back
-   └────┬────┘                                   └────┬────┘
-        └──────────────► bus arbiter ◄────────────────┘
-                              │
-              ┌───────────────┼────────────────┐
-           RAM 64 KiB      CLINT / UART / GPIO / SIMCTRL
-```
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/img/block_diagram_dark.svg">
+  <img alt="Block diagram: five pipeline stages (IF, ID, EX, MEM, WB) with forwarding and redirect paths; I-cache and D-cache feed a bus arbiter connected to RAM, CLINT, UART, GPIO and SIMCTRL" src="docs/img/block_diagram.svg" width="100%">
+</picture>
+
+Details: [micro-architecture](docs/01_microarchitecture.md), [front end](docs/02_frontend.md), [caches & SoC](docs/04_caches_soc.md).
 
 ## Quick start
 ```bash
